@@ -21,15 +21,21 @@
                   </div>
                   <div class="row">
                       <div class="col-md-4">
-                          <button type="submit" class="btn btn-success">Submit</button>
+                          <button type="submit" class="btn btn-success">Login</button>
                       </div>
                   </div>
               </form>
+              <?php if (isset($_GET['invalid_credentials'])) : ?>
+                  <div class="row mt-5">
+                      <div class="alert alert-danger text-center">
+                          Invalid credentials
+                      </div>
+                  </div>
+              <?php endif; ?>
           <?php else : ?>
               <div class="row mb-5">
                   <div class="">You're already logged in.</div>
                   <a href="<?php echo 'https://'.$_SERVER['HTTP_HOST'].'/tvshow-db'; ?>" class="btn btn-success">Return</a>
-                  <?php  //var_dump($_SERVER); ?>
               </div>
           <?php endif; ?>
       </div>

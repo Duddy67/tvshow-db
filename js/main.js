@@ -3,21 +3,26 @@
 
 document.addEventListener('DOMContentLoaded', () => {
 
+    // Get the user's authorization token.
     const authToken = getAuthToken();
 
+    // Check the token is still active.
     if (authToken.length === 0) {
+        // Redirect to the login page.
         window.location.replace(window.location.origin + '/tvshow-db/login.php');
     }
 
     let api = null;
 
+    // Retrieve the tmdb api key.
     getApiKey(authToken).then(apiKey => {
-        console.log(apiKey);
+        // Set some parameters.
         const params = {
             //'language': 'fr-FR', 
             'include_adult': false,
         };
 
+        // Create an TvShowDB instance.
         api = new TvShowDB.init(apiKey, params);
 
         // Some filters can be set before the initial api call.
@@ -30,12 +35,17 @@ document.addEventListener('DOMContentLoaded', () => {
         // Run the initial api call.
         return api.getTvShows();
     }).then(data => {
+        // Create the list with the retrieved data.
         buildTvShowList(data, api);
 
-        // Get the genre list from the API then build the genre buttons.
+        // Get the genre list from the tmdb api.
         return api.getGenreList();
     }).then(data => {
+        // Create the genre button board.
         createGenreButtons(data.genres, api.getGenres());
+
+        // Create some filters.
+
         createYearFilterLists(api);
         createSortTypeOptions(api);
     }).catch(error => {
@@ -247,9 +257,13 @@ async function getApiKey(authToken) {
         throw new Error('Couldn\'t fetch the data. status: ' + response.status);
     }
 
-    const apiKey = await response.text();
+    const result = await response.text();
 
-    return apiKey;
+    if (result.startsWith('Error')) {
+        throw new Error('Couldn\'t get the api key: ' + result);
+    }
+
+    return result;
 }
 
 function resetTvShowList(api) {
@@ -351,7 +365,6 @@ function createYearFilterLists(api) {
 
 function buildTvShowList(data, api) {
 
-        console.log(data);
     data.results.forEach((value, index, array) => {
         // Create the tvshow card.
         let card = document.createElement('div');
@@ -420,7 +433,6 @@ function createSortTypeOptions(api) {
 
 // Function to open the modal and populate it with tvshow details
 function openTvShowModal(tvshow, api) {
-  console.log(tvshow);
     const modalTitle = document.getElementById('tvshowModalLabel');
     const modalPoster = document.getElementById('modalPoster');
     const modalReleaseDate = document.getElementById('modalReleaseDate');
@@ -447,7 +459,10 @@ function openTvShowModal(tvshow, api) {
     }
 
     // Populate modal
-    modalTitle.textContent = `${tvshow.name} (${new Date(tvshow.first_air_date).getFullYear()})`;
+
+    // Set the tv show name according to the attribute name.
+    const name = tvshow.name !== undefined ? tvshow.name : tvshow.original_name;
+    modalTitle.textContent = `${name} (${new Date(tvshow.first_air_date).getFullYear()})`;
     modalPoster.src = `${api.getBaseImageUrl('w500')}${tvshow.poster_path}`;
     modalReleaseDate.textContent = tvshow.first_air_date;
     // Compute the run time according to the given array value.
@@ -456,7 +471,9 @@ function openTvShowModal(tvshow, api) {
     modalSeasons.textContent = tvshow.number_of_seasons
     modalInProduction.textContent = tvshow.in_production ? 'Yes' : 'No';
     modalOverview.textContent = tvshow.overview;
-    modalCreatedBy.textContent = tvshow.created_by[0].name;
+    // Check the created_by array is not empty and set the value accordingly.
+    const createdBy = tvshow.created_by.length ? tvshow.created_by[0].name : 'No info';
+    modalCreatedBy.textContent = createdBy;
     modalCasting.textContent = casting;
     modalVoteAverage.textContent = tvshow.vote_average.toFixed(1);
 
