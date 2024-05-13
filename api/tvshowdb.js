@@ -45,7 +45,7 @@ const TvShowDB = (function() {
         _(_key).params = {};
         _(_key).apiBaseUrl = 'https://api.themoviedb.org/3/';
         _(_key).baseImageUrl = 'https://image.tmdb.org/t/p/';
-        _(_key).filters = { 'genres': [], 'years': [], 'casts': [] };
+        _(_key).filters = { 'genres': [], 'years': [], 'countries': [] };
         _(_key).sortBy = '';
         _(_key).sortTypes = [
             {'value': 'name.asc', 'text': 'Original title asc'},
@@ -59,7 +59,15 @@ const TvShowDB = (function() {
             {'value': 'vote_count.asc', 'text': 'Vote count asc'},
             {'value': 'vote_count.desc', 'text': 'Vote count desc'},
         ];
-
+        // Countries that return no tv show at all. Thus it's useless to use them in the country filter.
+        _(_key).noTvShowCountries = [
+            'AG','AI','AQ','AS','BB','BI','BM','BT','BV','CC','CK','CV','CX','DJ','DM','ER',
+            'FK','FM','FO','GD','GF','GL','GM','GN','GP','GQ','GS','GU','GY','HM','HT','KG',
+            'KI','KM','KN','KY','LC','LI','LR','LS','MC','MG','MH','MK','MS','MW','MZ','NA',
+            'NF','NR','NU','OM','PF','PM','PN','PW','RE','RW','SB','SC','SD','SH','SJ','SL',
+            'SR','SS','SV','TD','TF','TJ','TK','TL','TM','TP','TV','UM','VA','VC','VG','VI',
+            'WF','WS','YT','ZR'
+        ];
     }
 
     /*
@@ -99,6 +107,7 @@ const TvShowDB = (function() {
             // Set the filters.
             const with_genres = this._(_key).filters.genres.length ? '&with_genres=' + this._(_key).filters.genres.join(',') : '';
             const first_air_date = this._(_key).filters.years.length ? '&first_air_date.gte=' + this._(_key).filters.years[0] + '-01-01&first_air_date.lte=' + this._(_key).filters.years[1] + '-12-31' : '';
+            const with_origin_country = this._(_key).filters.countries.length ? '&with_origin_country=' + this._(_key).filters.countries.join('|') : '';
 
             // Build the resource.
             const resource = this._(_key).apiBaseUrl + 'discover/tv?api_key=' +
@@ -109,6 +118,7 @@ const TvShowDB = (function() {
                              with_genres + 
                              '&sort_by=' + this._(_key).sortBy + 
                              first_air_date + 
+                             with_origin_country + 
                              '&page=' + page;
 
             const data = await _getData(resource);
@@ -185,6 +195,38 @@ const TvShowDB = (function() {
 
         resetYears: function() {
             this._(_key).filters.years = [];
+        },
+
+        getCountryList: async function() {
+            const resource = this._(_key).apiBaseUrl + 'configuration/countries?api_key=' +
+                             this._(_key).apiKey +
+                             '&language=' + this._(_key).params.language;
+
+            const data = await _getData(resource);
+
+            return data;
+        },
+
+        getCountries: function() {
+            return this._(_key).filters.countries;
+        },
+
+        updateCountries: function(countries) {
+            // Make sure the given parameter is an array.
+            if (!Array.isArray(countries)) {
+                console.log('Error: countries parameter must be of type Array.')
+                return;
+            }
+
+            this._(_key).filters.countries = countries;
+        },
+
+        resetCountries: function() {
+            this._(_key).filters.countries = [];
+        },
+
+        getNoTvShowCountries: function() {
+            return this._(_key).noTvShowCountries;
         },
 
         getBaseImageUrl: function(size) {

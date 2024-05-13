@@ -26,11 +26,12 @@ document.addEventListener('DOMContentLoaded', () => {
         api = new TvShowDB.init(apiKey, params);
 
         // Some filters can be set before the initial api call.
-        // For instance, this will return the tvshows with drama and comedy genre 
+        // For instance, this will return the french tvshows with drama and comedy genre 
         // and released from 1970 to 1977
 
         api.addGenres([18, 35]);
         //api.setYears([1970, 1977]);
+        //api.updateCountries(['FR']);
 
         // Run the initial api call.
         return api.getTvShows();
@@ -48,6 +49,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         createYearFilterLists(api);
         createSortTypeOptions(api);
+
+        return api.getCountryList();
+    }).then(data => {
+        createCountryList(data, api);
     }).catch(error => {
         console.log('Promise rejected', error.message);
     });
@@ -150,6 +155,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 toYear.disabled = true;
             }
 
+            if (e.target.dataset.resetType == 'countries') {
+                api.resetCountries();
+                document.getElementById('countries').selectedIndex = -1;
+            }
+
             if (e.target.dataset.resetType == 'search') {
                 // Reset all the search parameters.
                 document.getElementById('searchByTitle').value = '';
@@ -204,6 +214,20 @@ document.addEventListener('DOMContentLoaded', () => {
             api.setYears([fromYear.value, toYear.value]);
         }
 
+        resetTvShowList(api);
+    });
+
+    document.getElementById('filterByCountries').addEventListener('click', (e) => {
+        const select = e.target.parentElement;
+        let countries = [];
+
+        for (let i = 0; i < select.options.length; i++) {
+            if (select.options[i].selected) {
+                countries.push(select.options[i].value);
+            }
+        }
+
+        api.updateCountries(countries);
         resetTvShowList(api);
     });
 
@@ -359,8 +383,51 @@ function createYearFilterLists(api) {
         toYear.appendChild(clone);
     });
 
+    let fromLabel = document.createElement('label');
+    fromLabel.setAttribute('for', 'fromYear');
+    fromLabel.appendChild(document.createTextNode('From first air year'));
+
+    document.getElementById('fromYearList').appendChild(fromLabel);
     document.getElementById('fromYearList').appendChild(fromYear);
+
+    let toLabel = document.createElement('label');
+    toLabel.setAttribute('for', 'toYear');
+    toLabel.appendChild(document.createTextNode('To first air year'));
+
+    document.getElementById('toYearList').appendChild(toLabel);
     document.getElementById('toYearList').appendChild(toYear);
+}
+
+function createCountryList(countries, api) {
+    let label = document.createElement('label');
+    label.setAttribute('for', 'countries');
+    label.appendChild(document.createTextNode('Countries'));
+
+    let select = document.createElement('select');
+    select.className = 'form-select';
+    select.setAttribute('name', 'countries');
+    select.setAttribute('id', 'countries');
+    select.setAttribute('multiple', 'multiple');
+
+    const noTvShowCountries = api.getNoTvShowCountries();
+    const selected = api.getCountries();
+
+    countries.forEach((country) => {
+        if (!noTvShowCountries.includes(country.iso_3166_1)) {
+            let option = document.createElement('option');
+            option.value = country.iso_3166_1;
+            option.text = country.native_name;
+
+            if (selected.includes(country.iso_3166_1)) {
+                option.selected = true;
+            }
+
+            select.appendChild(option);
+        }
+    });
+
+    document.getElementById('filterByCountries').appendChild(label);
+    document.getElementById('filterByCountries').appendChild(select);
 }
 
 function buildTvShowList(data, api) {
